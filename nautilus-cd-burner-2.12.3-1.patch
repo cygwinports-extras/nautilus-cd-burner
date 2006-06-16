@@ -1,0 +1,142 @@
+diff -urN -x .build -x .inst -x .sinst -x configure -x 'Makefile.in*' -x 'aclocal.m4*' -x ltmain.sh -x 'config.*' -x depcomp -x install-sh -x missing -x mkinstalldirs -x 'intltool*' -x autom4te.cache -x '*compile' -x '*stamp' -x '*html' -x '*sgml' -x '*tmpl' -x '*txt' -x '*xml' nautilus-cd-burner-2.12.3-orig/Makefile.am nautilus-cd-burner-2.12.3/Makefile.am
+--- nautilus-cd-burner-2.12.3-orig/Makefile.am	2005-03-28 18:57:01.000000000 -0600
++++ nautilus-cd-burner-2.12.3/Makefile.am	2006-02-23 18:33:02.062500000 -0600
+@@ -1,4 +1,4 @@
+-module_flags = -avoid-version -module
++module_flags = -avoid-version -module -no-undefined
+ 
+ SUBDIRS = po
+ 
+@@ -81,6 +81,8 @@
+ 	$(MKDTEMP_FILES) \
+ 	$(NULL)
+ 
++nautilus_cd_burner_LDFLAGS = -Wl,--export-all-symbols
++
+ nautilus_cd_burner_LDADD = \
+ 	libnautilus-burn.la \
+ 	$(GUI_LIBS) \
+diff -urN -x .build -x .inst -x .sinst -x configure -x 'Makefile.in*' -x 'aclocal.m4*' -x ltmain.sh -x 'config.*' -x depcomp -x install-sh -x missing -x mkinstalldirs -x 'intltool*' -x autom4te.cache -x '*compile' -x '*stamp' -x '*html' -x '*sgml' -x '*tmpl' -x '*txt' -x '*xml' nautilus-cd-burner-2.12.3-orig/dvd_plus_rw_utils.cpp nautilus-cd-burner-2.12.3/dvd_plus_rw_utils.cpp
+--- nautilus-cd-burner-2.12.3-orig/dvd_plus_rw_utils.cpp	2005-12-16 10:08:01.000000000 -0600
++++ nautilus-cd-burner-2.12.3/dvd_plus_rw_utils.cpp	2006-02-23 17:13:17.718750000 -0600
+@@ -159,7 +159,11 @@
+ extern "C"
+ int get_mmc_profile (int fd)
+ {
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
+   Scsi_Command cmd(fd);
++#endif
+   int retval = -1;
+   unsigned char formats[260],disc_info[32];
+   unsigned char page[20];
+@@ -302,7 +306,11 @@
+ extern "C"
+ int get_disc_status (int fd, int *empty, int *is_rewritable, int *is_blank)
+ {
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
+   Scsi_Command cmd(fd);
++#endif
+   int retval = -1;
+   unsigned char page[32];
+   unsigned char *sense=cmd.sense();
+@@ -349,7 +357,11 @@
+ extern "C"
+ int get_disc_size_cdr (int fd)
+ {
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
+   Scsi_Command cmd(fd);
++#endif
+   int retval = -1;
+   unsigned char toc[4], *atip;
+   int len;
+@@ -391,7 +403,11 @@
+ extern "C"
+ gint64 get_disc_size_cd (int fd)
+ {
+-  Scsi_Command cmd (fd);
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
++  Scsi_Command cmd(fd);
++#endif
+   unsigned char data [8];
+   unsigned int ccity, bsize;
+   int retval = -1;
+@@ -536,14 +552,22 @@
+ extern "C"
+ gint64 get_disc_size_dvd (int fd, int mmc_profile)
+ {
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
+   Scsi_Command cmd(fd);
++#endif
+   return (gint64)get_2k_capacity(cmd, mmc_profile)*2048;
+ }
+ 
+ extern "C"
+ int get_read_write_speed (int fd, int *read_speed, int *write_speed)
+ {
++#if defined _WIN32 || defined __CYGWIN__
++  Scsi_Command cmd;
++#else
+   Scsi_Command cmd(fd);
++#endif
+   int retval = -1;
+   unsigned char header[12], *page2A, *p;
+   unsigned int len, bdlen, hlen;
+diff -urN -x .build -x .inst -x .sinst -x configure -x 'Makefile.in*' -x 'aclocal.m4*' -x ltmain.sh -x 'config.*' -x depcomp -x install-sh -x missing -x mkinstalldirs -x 'intltool*' -x autom4te.cache -x '*compile' -x '*stamp' -x '*html' -x '*sgml' -x '*tmpl' -x '*txt' -x '*xml' nautilus-cd-burner-2.12.3-orig/mapping-protocol.c nautilus-cd-burner-2.12.3/mapping-protocol.c
+--- nautilus-cd-burner-2.12.3-orig/mapping-protocol.c	2005-10-03 10:13:24.000000000 -0500
++++ nautilus-cd-burner-2.12.3/mapping-protocol.c	2006-02-23 16:44:22.031250000 -0600
+@@ -28,6 +28,7 @@
+ #include <string.h>
+ #include <fcntl.h>
+ #include <errno.h>
++#include <sys/time.h>
+ 
+ #include "mapping-protocol.h"
+ 
+diff -urN -x .build -x .inst -x .sinst -x configure -x 'Makefile.in*' -x 'aclocal.m4*' -x ltmain.sh -x 'config.*' -x depcomp -x install-sh -x missing -x mkinstalldirs -x 'intltool*' -x autom4te.cache -x '*compile' -x '*stamp' -x '*html' -x '*sgml' -x '*tmpl' -x '*txt' -x '*xml' nautilus-cd-burner-2.12.3-orig/transport.hxx nautilus-cd-burner-2.12.3/transport.hxx
+--- nautilus-cd-burner-2.12.3-orig/transport.hxx	2005-02-22 18:42:41.000000000 -0600
++++ nautilus-cd-burner-2.12.3/transport.hxx	2006-02-23 17:09:29.312500000 -0600
+@@ -6,7 +6,7 @@
+ // For further details see http://fy.chalmers.se/~appro/linux/DVD+RW/
+ //
+ 
+-#if defined(__unix) || defined(__unix__)
++#if defined(__unix) || defined(__unix__) || defined(__CYGWIN__)
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+@@ -82,7 +82,7 @@
+ #define getmsecs()	GetTickCount()
+ #define exit(e)		ExitProcess(e)
+ 
+-#endif
++#endif	/* _WIN32 */
+ 
+ #define CREAM_ON_ERRNO_NAKED(s)				\
+     switch ((s)[12])					\
+@@ -1223,10 +1223,15 @@
+ #endif
+ };
+ 
+-#elif defined(_WIN32)
++#elif defined(_WIN32) || defined(__CYGWIN__)
+ 
+ #if defined(__MINGW32__)
+ #include <ddk/ntddscsi.h>
++#elif defined(__CYGWIN__)
++#define WIN32_LEAN_AND_MEAN
++//#define _WIN32_WINNT 0x0500
++#include <windows.h>
++#include <ddk/ntddscsi.h>
+ #else
+ #include <devioctl.h>
+ #include <ntddscsi.h>
